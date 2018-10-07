@@ -15,4 +15,5 @@ Google Codelab
 https://codelabs.developers.google.com/codelabs/tensorflow-for-poets-2-tflite/#2
 
 TensorFlow Lite Example
+
 https://github.com/nex3z/tflite-mnist-android
