@@ -16,7 +16,6 @@ import android.widget.TextView;
 
 import org.tensorflow.lite.Interpreter;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,19 +36,17 @@ public class MainActivity extends AppCompatActivity {
     private static final int DIM_BATCH_SIZE = 1;
     private static final int DIM_PIXEL_SIZE = 1;
 
-    private static final int DIM_IMG_SIZE_X = 28;
-    private static final int DIM_IMG_SIZE_Y = 28;
+    private static final int DIM_IMG_WIDTH = 28;
+    private static final int DIM_IMG_HEIGHT = 28;
 
-    private static final int IMAGE_MEAN = 128;
-    private static final float IMAGE_STD = 128.0f;
-    private static final int RESULTS_TO_SHOW = 1;
+    private static final int RESULTS_TO_SHOW = 3;
 
     private Interpreter tflite = null;
     /** A ByteBuffer to hold image data, to be feed into Tensorflow Lite as inputs. */
     private ByteBuffer imgData = null;
 
-    /* Preallocated buffers for storing image data in. */
-    private int[] intValues = new int[DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y];
+    /** Preallocated buffers for storing image data in. */
+    private int[] intValues = new int[DIM_IMG_WIDTH * DIM_IMG_HEIGHT];
 
     private float[][] labelProbArray = new float[1][10];
 
@@ -79,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             tflite = new Interpreter(loadModelFile(this));
             imgData = ByteBuffer.allocateDirect(
-                    4 * DIM_BATCH_SIZE * DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y * DIM_PIXEL_SIZE);
+                    4 * DIM_BATCH_SIZE * DIM_IMG_WIDTH * DIM_IMG_HEIGHT * DIM_PIXEL_SIZE);
             imgData.order(ByteOrder.nativeOrder());
         } catch (IOException e) {
             e.printStackTrace();
@@ -92,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
         Bitmap bmp = getBitmapFromAssets("s3.png");
         convertBitmapToByteBuffer(bmp);
         Drawable d = new BitmapDrawable(getResources(), bmp);
-        ImageView mnistImgView = (ImageView)findViewById(R.id.mnist_img);
+        ImageView mnistImgView = findViewById(R.id.mnist_img);
         mnistImgView.setImageDrawable(d);
 
         tflite.run(imgData, labelProbArray);
@@ -101,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "index " + i + " prob is " + labelProbArray[0][i]);
         }
 
-        TextView textView = (TextView)findViewById(R.id.tv_prob);
+        TextView textView = findViewById(R.id.tv_prob);
         textView.setText(printTopKLabels());
     }
 
@@ -130,8 +127,8 @@ public class MainActivity extends AppCompatActivity {
         // Convert the image to floating point.
         int pixel = 0;
         long startTime = SystemClock.uptimeMillis();
-        for (int i = 0; i < DIM_IMG_SIZE_X; ++i) {
-            for (int j = 0; j < DIM_IMG_SIZE_Y; ++j) {
+        for (int i = 0; i < DIM_IMG_WIDTH; ++i) {
+            for (int j = 0; j < DIM_IMG_HEIGHT; ++j) {
                 final int val = intValues[pixel++];
                 imgData.putFloat(val);
             }
@@ -154,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
         final int size = sortedLabels.size();
         for (int i = 0; i < size; ++i) {
             Map.Entry<String, Float> label = sortedLabels.poll();
-            textToShow = String.format("Prediction: %s   Probability: %4.2f",label.getKey(),label.getValue()) + textToShow;
+            textToShow = String.format("\nPrediction: %s   Probability: %4.2f",label.getKey(),label.getValue()) + textToShow;
         }
         return textToShow;
     }
