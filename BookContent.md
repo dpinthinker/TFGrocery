@@ -1,11 +1,11 @@
-# TensorFlow Lite部署介绍
+# TensorFlow Lite Android部署介绍
 
 ## 1、简要介绍
 
 TensorFlow Lite是TensorFlow在移动和嵌入式设备上的轻量级解决方案，目前只能用于预测，还不能进行训练。TensorFLow Lite针对移动和嵌入设备开发，具有如下三个特点：
 
 * 轻量
-* 扩平台
+* 跨平台
 * 快速
 
 目前TensorFlow Lite已经支持Android、iOS、Raspberry等设备，本章会基于Android设备上的部署方法进行讲解，内容包括模型保存、转换和部署。
@@ -324,7 +324,7 @@ index 9 prob is 0.0
 
 1. 模型保存：我们使用的是keras Squential类的save函数
 2. 模型转换：我们使用的tflite_convert工具
-3. Android部署：配置build.gradle和assets，通过memory-map加载图片并转化为ByteBuffer作为输入和固定唯独的float数组作为输出，最后调用Interpreter.run()
+3. Android部署：配置build.gradle和assets，通过memory-map加载图片并转化为ByteBuffer作为输入和固定维数的float数组作为输出，最后调用Interpreter.run()
 4. 处理和显示运行结果
 
 ## 6、附录
