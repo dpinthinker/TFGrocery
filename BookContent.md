@@ -102,7 +102,7 @@ python mnist_cnn.py
 
 执行过程会比较久，执行结束后，会产生在当前目录产生`mnist_cnn.h5`文件（HDF5格式），就是keras训练后模型，其中已经包含了训练后的模型结构和权重等信息。
 
-该模型可以在服务器端，可以直接通过keras.models.load_model("mnist_cnn.h5")加载，然后进行推测；在移动设备需要将HDF5模型文件转换为TensorFlow Lite的格式，然后提供相应平台提供的Interpreter加载，然后进行推测。
+该模型可以在服务器端，可以直接通过keras.models.load_model("mnist_cnn.h5")加载，然后进行推测；在移动设备需要将HDF5模型文件转换为TensorFlow Lite的格式，供相应平台的Interpreter加载，然后进行推测。
 
 ## 3、模型转换
 
