@@ -10,7 +10,7 @@ TensorFlow Lite是TensorFlow在移动和嵌入式设备上的轻量级解决方�
 
 目前TensorFlow Lite已经支持Android、iOS、Raspberry等设备，本章会基于Android设备上的部署方法进行讲解，内容包括模型保存、转换和部署。
 
-## 2、模型保存
+## 2、模型训练和保存
 
 我们以keras模型训练和保存为例进行讲解，如下是keras官方的mnist模型训练样例。
 
@@ -322,7 +322,7 @@ index 9 prob is 0.0
 
 至此，整个TensorFlow Lite的部署就完成了，包含四个阶段：
 
-1. 模型保存：我们使用的是keras Squential类的save函数
+1. 模型训练和保存：我们使用的是keras Squential类的save函数
 2. 模型转换：我们使用的tflite_convert工具
 3. Android部署：配置build.gradle和assets，通过memory-map加载图片并转化为ByteBuffer作为输入和固定维数的float数组作为输出，最后调用Interpreter.run()
 4. 处理和显示运行结果
