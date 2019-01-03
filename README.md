@@ -21,3 +21,7 @@ https://github.com/nex3z/tflite-mnist-android
 What I know about TensorFlow Lite
 
 https://www.slideshare.net/kstan2/introduction-to-tensorflow-lite
+
+## tensorboard在python3+上的执行方法
+
+python3 -m tensorboard.main --logdir=~/my/training/dir
