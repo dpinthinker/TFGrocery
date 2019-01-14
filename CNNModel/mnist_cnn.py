@@ -12,9 +12,9 @@ from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 
-batch_size = 128
+batch_size = 16
 num_classes = 10
-epochs = 12
+epochs = 1
 
 # input image dimensions
 img_rows, img_cols = 28, 28

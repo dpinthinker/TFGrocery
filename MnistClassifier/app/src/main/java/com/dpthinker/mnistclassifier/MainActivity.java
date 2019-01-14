@@ -14,6 +14,9 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.dpthinker.mnistclassifier.model.BaseModelConfig;
+import com.dpthinker.mnistclassifier.model.ModelConfigFactory;
+
 import org.tensorflow.lite.Interpreter;
 
 import java.io.FileInputStream;
@@ -30,27 +33,33 @@ import java.util.PriorityQueue;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "MainActivity";
-    private static final String MODEL_PATH = "mnist_cnn.tflite";
+    private final static String TAG = "MainActivity";
+    private String mModelPath = "inceptionv3_mnist.tflite";
 
-    private static final int DIM_BATCH_SIZE = 1;
-    private static final int DIM_PIXEL_SIZE = 1;
+    private int mDimBatchSize = 1;
+    private int mDimPixelSize = 3;
 
-    private static final int DIM_IMG_WIDTH = 28;
-    private static final int DIM_IMG_HEIGHT = 28;
+    private int mDimImgWidth = 299;
+    private int mDimImgHeight = 299;
 
     private static final int RESULTS_TO_SHOW = 3;
 
-    private Interpreter tflite = null;
+    private int mImageMean = 0;
+    private float mImageSTD = 255.0f;
+
+    private Interpreter mTFLite = null;
+
     /** A ByteBuffer to hold image data, to be feed into Tensorflow Lite as inputs. */
-    private ByteBuffer imgData = null;
+    private ByteBuffer mImgData = null;
 
     /** Preallocated buffers for storing image data in. */
-    private int[] intValues = new int[DIM_IMG_WIDTH * DIM_IMG_HEIGHT];
+    private int[] mIntValues = new int[mDimImgWidth * mDimImgHeight];
 
-    private float[][] labelProbArray = new float[1][10];
+    private float[][] mLabelProbArray = new float[1][10];
 
-    private PriorityQueue<Map.Entry<String, Float>> sortedLabels =
+    private BaseModelConfig mModelConfig = null;
+
+    private PriorityQueue<Map.Entry<String, Float>> mSortedLabels =
             new PriorityQueue<>(
                     RESULTS_TO_SHOW,
                     new Comparator<Map.Entry<String, Float>>() {
@@ -59,9 +68,10 @@ public class MainActivity extends AppCompatActivity {
                             return (o1.getValue()).compareTo(o2.getValue());
                         }
                     });
+
     /** Memory-map the model file in Assets. */
     private MappedByteBuffer loadModelFile(Activity activity) throws IOException {
-        AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(MODEL_PATH);
+        AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(mModelPath);
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
         FileChannel fileChannel = inputStream.getChannel();
         long startOffset = fileDescriptor.getStartOffset();
@@ -69,15 +79,28 @@ public class MainActivity extends AppCompatActivity {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
+    private void initConfig(BaseModelConfig config) {
+        this.mDimBatchSize = config.getDimBatchSize();
+        this.mDimPixelSize = config.getDimPixelSize();
+        this.mDimImgWidth = config.getDimImgWeight();
+        this.mDimImgHeight = config.getDimImgHeight();
+        this.mImageMean = config.getImageMean();
+        this.mImageSTD = config.getImageSTD();
+        this.mModelPath = config.getModelName();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mModelConfig = ModelConfigFactory.getModelConfig(
+                ModelConfigFactory.KERAS_MODEL);
+        initConfig(mModelConfig);
         try {
-            tflite = new Interpreter(loadModelFile(this));
-            imgData = ByteBuffer.allocateDirect(
-                    4 * DIM_BATCH_SIZE * DIM_IMG_WIDTH * DIM_IMG_HEIGHT * DIM_PIXEL_SIZE);
-            imgData.order(ByteOrder.nativeOrder());
+            mTFLite = new Interpreter(loadModelFile(this));
+            mImgData = ByteBuffer.allocateDirect(
+                    4 * mDimBatchSize * mDimImgWidth * mDimImgHeight * mDimPixelSize);
+            mImgData.order(ByteOrder.nativeOrder());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -86,16 +109,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Bitmap bmp = getBitmapFromAssets("s3.png");
+        Bitmap bmp = getBitmapFromAssets("s0.jpg");
         convertBitmapToByteBuffer(bmp);
-        Drawable d = new BitmapDrawable(getResources(), bmp);
+        Drawable drawable = new BitmapDrawable(getResources(), bmp);
         ImageView mnistImgView = findViewById(R.id.mnist_img);
-        mnistImgView.setImageDrawable(d);
+        mnistImgView.setImageDrawable(drawable);
 
-        tflite.run(imgData, labelProbArray);
-        Log.e(TAG, "result size: " + labelProbArray[0].length);
+        mTFLite.run(mImgData, mLabelProbArray);
+        Log.e(TAG, "result size: " + mLabelProbArray[0].length);
         for (int i = 0; i < 10; i++) {
-            Log.e(TAG, "index " + i + " prob is " + labelProbArray[0][i]);
+            Log.e(TAG, "index " + i + " prob is " + mLabelProbArray[0][i]);
         }
 
         TextView textView = findViewById(R.id.tv_prob);
@@ -113,24 +136,26 @@ public class MainActivity extends AppCompatActivity {
         }
         Bitmap bitmap = BitmapFactory.decodeStream(istr);
 
+        bitmap = Bitmap.createScaledBitmap(bitmap, mDimImgWidth, mDimImgHeight, true);
+
         return bitmap;
     }
 
     /** Writes Image data into a {@code ByteBuffer}. */
     private void convertBitmapToByteBuffer(Bitmap bitmap) {
-        if (imgData == null) {
+        if (mImgData == null) {
             return;
         }
-        imgData.rewind();
+        mImgData.rewind();
         Log.d(TAG, "bmp width: " + bitmap.getWidth() + ", height = " + bitmap.getHeight());
-        bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        bitmap.getPixels(mIntValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         // Convert the image to floating point.
         int pixel = 0;
         long startTime = SystemClock.uptimeMillis();
-        for (int i = 0; i < DIM_IMG_WIDTH; ++i) {
-            for (int j = 0; j < DIM_IMG_HEIGHT; ++j) {
-                final int val = intValues[pixel++];
-                imgData.putFloat(val);
+        for (int i = 0; i < mDimImgWidth; ++i) {
+            for (int j = 0; j < mDimImgHeight; ++j) {
+                final int val = mIntValues[pixel++];
+                mModelConfig.addImgValue(mImgData, val);
             }
 
         }
@@ -141,16 +166,16 @@ public class MainActivity extends AppCompatActivity {
     /** Prints top-K labels, to be shown in UI as the results. */
     private String printTopKLabels() {
         for (int i = 0; i < 10; ++i) {
-            sortedLabels.add(
-                    new AbstractMap.SimpleEntry<>(""+i, labelProbArray[0][i]));
-            if (sortedLabels.size() > RESULTS_TO_SHOW) {
-                sortedLabels.poll();
+            mSortedLabels.add(
+                    new AbstractMap.SimpleEntry<>(""+i, mLabelProbArray[0][i]));
+            if (mSortedLabels.size() > RESULTS_TO_SHOW) {
+                mSortedLabels.poll();
             }
         }
         String textToShow = "";
-        final int size = sortedLabels.size();
+        final int size = mSortedLabels.size();
         for (int i = 0; i < size; ++i) {
-            Map.Entry<String, Float> label = sortedLabels.poll();
+            Map.Entry<String, Float> label = mSortedLabels.poll();
             textToShow = String.format("\nPrediction: %s   Probability: %4.2f",label.getKey(),label.getValue()) + textToShow;
         }
         return textToShow;
