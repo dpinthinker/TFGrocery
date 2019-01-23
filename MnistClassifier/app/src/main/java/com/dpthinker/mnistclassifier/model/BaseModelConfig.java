@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 
 public abstract class BaseModelConfig {
 
+    private int numBytesPerChannel = 4;
+
     private int dimBatchSize = 1;
     private int dimPixelSize = 3;
 
@@ -14,6 +16,10 @@ public abstract class BaseModelConfig {
     private float imageSTD = 255.0f;
 
     private String modelName;
+
+    public int getNumBytesPerChannel() {
+        return numBytesPerChannel;
+    }
 
     public int getDimBatchSize() {
         return dimBatchSize;
@@ -41,6 +47,10 @@ public abstract class BaseModelConfig {
 
     public float getImageSTD() {
         return imageSTD;
+    }
+
+    protected void setNumBytesPerChannel(int num) {
+        this.numBytesPerChannel = num;
     }
 
     protected void setDimBatchSize(int size) {

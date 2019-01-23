@@ -36,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
     private final static String TAG = "MainActivity";
     private String mModelPath = "inceptionv3_mnist.tflite";
 
+    private int mNumBytesPerChannel = 4;
+
     private int mDimBatchSize = 1;
     private int mDimPixelSize = 3;
 
@@ -55,7 +57,8 @@ public class MainActivity extends AppCompatActivity {
     /** Preallocated buffers for storing image data in. */
     private int[] mIntValues = new int[mDimImgWidth * mDimImgHeight];
 
-    private float[][] mLabelProbArray = new float[1][10];
+    //private float[][] mLabelProbArray = new float[1][10];
+    private byte[][] mLabelProbArray = new byte[1][10];
 
     private BaseModelConfig mModelConfig = null;
 
@@ -80,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initConfig(BaseModelConfig config) {
+        this.mNumBytesPerChannel = config.getNumBytesPerChannel();
         this.mDimBatchSize = config.getDimBatchSize();
         this.mDimPixelSize = config.getDimPixelSize();
         this.mDimImgWidth = config.getDimImgWeight();
@@ -94,12 +98,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mModelConfig = ModelConfigFactory.getModelConfig(
-                ModelConfigFactory.KERAS_MODEL);
+                ModelConfigFactory.INCEPTION_QUANT_MODEL);
         initConfig(mModelConfig);
         try {
             mTFLite = new Interpreter(loadModelFile(this));
             mImgData = ByteBuffer.allocateDirect(
-                    4 * mDimBatchSize * mDimImgWidth * mDimImgHeight * mDimPixelSize);
+                    mNumBytesPerChannel * mDimBatchSize * mDimImgWidth * mDimImgHeight * mDimPixelSize);
             mImgData.order(ByteOrder.nativeOrder());
         } catch (IOException e) {
             e.printStackTrace();
@@ -109,16 +113,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Bitmap bmp = getBitmapFromAssets("s0.jpg");
+        Bitmap bmp = getBitmapFromAssets("s1.jpg");
         convertBitmapToByteBuffer(bmp);
         Drawable drawable = new BitmapDrawable(getResources(), bmp);
-        ImageView mnistImgView = findViewById(R.id.mnist_img);
-        mnistImgView.setImageDrawable(drawable);
+        ImageView imageView = findViewById(R.id.mnist_img);
+        imageView.setImageDrawable(drawable);
 
         mTFLite.run(mImgData, mLabelProbArray);
         Log.e(TAG, "result size: " + mLabelProbArray[0].length);
         for (int i = 0; i < 10; i++) {
-            Log.e(TAG, "index " + i + " prob is " + mLabelProbArray[0][i]);
+            Log.e(TAG, "index " + i + " prob is " + (mLabelProbArray[0][i]& 0xff) / 255.0f);
         }
 
         TextView textView = findViewById(R.id.tv_prob);
@@ -128,13 +132,13 @@ public class MainActivity extends AppCompatActivity {
     public Bitmap getBitmapFromAssets(String fileName) {
         AssetManager assetManager = getAssets();
 
-        InputStream istr = null;
+        InputStream inputStream = null;
         try {
-            istr = assetManager.open(fileName);
+            inputStream = assetManager.open(fileName);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Bitmap bitmap = BitmapFactory.decodeStream(istr);
+        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
 
         bitmap = Bitmap.createScaledBitmap(bitmap, mDimImgWidth, mDimImgHeight, true);
 
@@ -166,8 +170,7 @@ public class MainActivity extends AppCompatActivity {
     /** Prints top-K labels, to be shown in UI as the results. */
     private String printTopKLabels() {
         for (int i = 0; i < 10; ++i) {
-            mSortedLabels.add(
-                    new AbstractMap.SimpleEntry<>(""+i, mLabelProbArray[0][i]));
+            mSortedLabels.add(new AbstractMap.SimpleEntry<>(""+i, (mLabelProbArray[0][i]& 0xff) / 255.0f));
             if (mSortedLabels.size() > RESULTS_TO_SHOW) {
                 mSortedLabels.poll();
             }
@@ -176,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
         final int size = mSortedLabels.size();
         for (int i = 0; i < size; ++i) {
             Map.Entry<String, Float> label = mSortedLabels.poll();
-            textToShow = String.format("\nPrediction: %s   Probability: %4.2f",label.getKey(),label.getValue()) + textToShow;
+            textToShow = String.format("\n%s   %4.8f",label.getKey(),label.getValue()) + textToShow;
         }
         return textToShow;
     }

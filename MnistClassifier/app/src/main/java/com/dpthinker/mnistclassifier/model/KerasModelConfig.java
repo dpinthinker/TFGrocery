@@ -15,7 +15,7 @@ public class KerasModelConfig extends BaseModelConfig {
         setDimImgHeight(28);
 
         setImageMean(0);
-        setImageSTD(255);
+        setImageSTD(255.0f);
     }
 
     public void addImgValue(ByteBuffer imgData, int val) {
