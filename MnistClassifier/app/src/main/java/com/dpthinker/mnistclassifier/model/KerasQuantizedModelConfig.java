@@ -5,8 +5,9 @@ import java.nio.ByteBuffer;
 public class KerasQuantizedModelConfig extends KerasModelConfig {
     @Override
     protected void setConfigs() {
-        setModelName("keras_mnist_quantized_uint8.tflite");
+        setModelName("keras_mnist_quantized_uint8_0_1.tflite");
 
+        //Quantized model has only one channel
         setNumBytesPerChannel(1);
 
         setDimBatchSize(1);

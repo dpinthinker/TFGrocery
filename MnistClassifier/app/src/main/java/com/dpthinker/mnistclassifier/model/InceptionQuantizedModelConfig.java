@@ -7,6 +7,7 @@ public class InceptionQuantizedModelConfig extends InceptionModelConfig {
     protected void setConfigs() {
         setModelName("inceptionv3_mnist_quantized_uint8.tflite");
 
+        //Quantized model has only one channel
         setNumBytesPerChannel(1);
 
         setDimBatchSize(1);
@@ -16,13 +17,13 @@ public class InceptionQuantizedModelConfig extends InceptionModelConfig {
         setDimImgHeight(299);
 
         setImageMean(0);
-        setImageSTD(255.0f);
+        setImageSTD(1.0f);
     }
 
     @Override
     public void addImgValue(ByteBuffer imgData, int val) {
-        imgData.put((byte) ((((val >> 16) & 0xFF) - getImageMean()) / getImageSTD()));
-        imgData.put((byte) ((((val >> 8) & 0xFF) - getImageMean()) / getImageSTD()));
-        imgData.put((byte) (((val & 0xFF) - getImageMean()) / getImageSTD()));
+        imgData.put((byte) ((val >> 16) & 0xFF));
+        imgData.put((byte) ((val >> 8) & 0xFF));
+        imgData.put((byte) (val & 0xFF));
     }
 }

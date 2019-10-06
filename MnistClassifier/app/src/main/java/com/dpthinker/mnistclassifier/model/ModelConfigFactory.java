@@ -6,6 +6,7 @@ public class ModelConfigFactory {
     public final static String KERAS_MODEL = "keras_mnist.tflite";
     public final static String INCEPTION_QUANT_MODEL = "inception_quantized_model";
     public final static String KERAS_QUANT_MODEL = "keras_quant_model";
+    public final static String SAVED_MODEL = "saved_model";
 
     public static BaseModelConfig getModelConfig(String model) {
         if (model == INCEPTION_MODEL) {
@@ -16,6 +17,8 @@ public class ModelConfigFactory {
             return new InceptionQuantizedModelConfig();
         } else if (model == KERAS_QUANT_MODEL) {
             return new KerasQuantizedModelConfig();
+        } else if (model == SAVED_MODEL) {
+            return new SavedModelConfig();
         }
         return null;
     }

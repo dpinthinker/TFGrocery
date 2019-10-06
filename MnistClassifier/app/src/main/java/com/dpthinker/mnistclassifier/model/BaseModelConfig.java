@@ -81,9 +81,7 @@ public abstract class BaseModelConfig {
         this.modelName = name;
     }
 
-    protected void setConfigs() {
-
-    }
+    protected abstract void setConfigs();
 
     public BaseModelConfig() {
         setConfigs();
