@@ -3,7 +3,6 @@ package com.dpthinker.mnistclassifier.classifier;
 import android.app.Activity;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
-import android.os.SystemClock;
 import android.util.Log;
 
 import com.dpthinker.mnistclassifier.model.BaseModelConfig;
@@ -17,17 +16,15 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.AbstractMap;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-public abstract class BaseClassifier {
+public class BaseClassifier {
     private final static String TAG = "BaseClassifier";
     protected static final int RESULTS_TO_SHOW = 3;
     protected Interpreter mTFLite;
-
-    /** A ByteBuffer to hold image data, to be feed into Tensorflow Lite as inputs. */
-    protected ByteBuffer mImgData;
 
     private String mModelPath = "";
 
@@ -40,6 +37,8 @@ public abstract class BaseClassifier {
     private int mDimImgHeight;
 
     private BaseModelConfig mModelConfig;
+
+    private float[][] mLabelProbArray = new float[1][10];
 
     protected PriorityQueue<Map.Entry<String, Float>> mSortedLabels =
             new PriorityQueue<>(
@@ -62,14 +61,11 @@ public abstract class BaseClassifier {
     }
 
     public BaseClassifier(String modelConfig, Activity activity) throws IOException {
+        // init configs for this classifier
         initConfig(ModelConfigFactory.getModelConfig(modelConfig));
 
         // init interpreter with config parameter
         mTFLite = new Interpreter(loadModelFile(activity));
-
-        mImgData = ByteBuffer.allocateDirect(
-                mNumBytesPerChannel * mDimBatchSize * mDimImgWidth * mDimImgHeight * mDimPixelSize);
-        mImgData.order(ByteOrder.nativeOrder());
     }
 
     /** Memory-map the model file in Assets. */
@@ -83,35 +79,62 @@ public abstract class BaseClassifier {
     }
 
     /** Writes Image data into a {@code ByteBuffer}. */
-    protected void convertBitmapToByteBuffer(Bitmap bitmap) {
-        if (mImgData == null) {
-            return;
-        }
-        mImgData.rewind();
-
+    protected ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
         int[] intValues = new int[mDimImgWidth * mDimImgHeight];
         scaleBitmap(bitmap).getPixels(intValues,
                 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
 
-        long startTime = SystemClock.uptimeMillis();
+        ByteBuffer imgData = ByteBuffer.allocateDirect(
+                mNumBytesPerChannel * mDimBatchSize * mDimImgWidth * mDimImgHeight * mDimPixelSize);
+        imgData.order(ByteOrder.nativeOrder());
+        imgData.rewind();
+
         // Convert the image to floating point.
         int pixel = 0;
         for (int i = 0; i < mDimImgWidth; ++i) {
             for (int j = 0; j < mDimImgHeight; ++j) {
-                final int val = intValues[pixel++];
-                mModelConfig.addImgValue(mImgData, val);
+                //final int val = intValues[pixel++];
+                int val = intValues[pixel++];
+                mModelConfig.addImgValue(imgData, val);
             }
-
         }
-        long endTime = SystemClock.uptimeMillis();
-        Log.d(TAG, "Timecost to put values into ByteBuffer: " + (endTime - startTime));
+        return imgData;
     }
 
     public Bitmap scaleBitmap(Bitmap bmp) {
         return Bitmap.createScaledBitmap(bmp, mDimImgWidth, mDimImgHeight, true);
     }
 
-    public abstract String printTopKLabels();
+    public String doClassify(Bitmap bitmap) {
+        // convert Bitmap to TFLite interpreter readable ByteBuffer
+        ByteBuffer imgData = convertBitmapToByteBuffer(bitmap);
 
-    public abstract String doClassify(Bitmap bmp);
+        // do run interpreter
+        long startTime = System.nanoTime();
+        mTFLite.run(imgData, mLabelProbArray);
+        long endTime = System.nanoTime();
+        Log.i(TAG, String.format("run interpreter cost: %f ms",
+                (float)(endTime - startTime)/1000000.0f));
+
+        // generate and return result
+        return printTopKLabels();
+    }
+
+    /** Prints top-K labels, to be shown in UI as the results. */
+    public String printTopKLabels() {
+        for (int i = 0; i < 10; i++) {
+            mSortedLabels.add(new AbstractMap.SimpleEntry<>(""+i, mLabelProbArray[0][i]));
+            if (mSortedLabels.size() > RESULTS_TO_SHOW) {
+                mSortedLabels.poll();
+            }
+        }
+        StringBuffer textToShow = new StringBuffer();
+        final int size = mSortedLabels.size();
+        for (int i = 0; i < size; ++i) {
+            Map.Entry<String, Float> label = mSortedLabels.poll();
+            textToShow.insert(0, String.format("\n%s   %4.8f",label.getKey(),label.getValue()));
+        }
+        return textToShow.toString();
+    }
+
 }

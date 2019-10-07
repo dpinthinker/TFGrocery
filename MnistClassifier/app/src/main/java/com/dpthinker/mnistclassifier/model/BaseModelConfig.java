@@ -4,16 +4,16 @@ import java.nio.ByteBuffer;
 
 public abstract class BaseModelConfig {
 
-    private int numBytesPerChannel = 4;
+    private int numBytesPerChannel;
 
-    private int dimBatchSize = 1;
-    private int dimPixelSize = 3;
+    private int dimBatchSize;
+    private int dimPixelSize;
 
-    private int dimImgWeight = 299;
-    private int dimImgHeight = 299;
+    private int dimImgWeight;
+    private int dimImgHeight;
 
-    private int imageMean = 0;
-    private float imageSTD = 255.0f;
+    private int imageMean;
+    private float imageSTD;
 
     private String modelName;
 

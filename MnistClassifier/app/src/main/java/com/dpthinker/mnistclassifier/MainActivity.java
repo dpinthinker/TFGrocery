@@ -1,20 +1,19 @@
 package com.dpthinker.mnistclassifier;
 
-import android.content.ContentResolver;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.Image;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import com.dpthinker.mnistclassifier.classifier.BaseClassifier;
-import com.dpthinker.mnistclassifier.classifier.FloatClassifier;
 import com.dpthinker.mnistclassifier.model.ModelConfigFactory;
 
 import java.io.FileNotFoundException;
@@ -22,8 +21,10 @@ import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
     private final static String TAG = "MainActivity";
-    ImageView mImgView;
-    TextView mTextView;
+    private ImageView mImgView;
+    private TextView mTextView;
+    private RadioGroup mRadioGroup;
+    private static boolean mIsFloat = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,22 +42,39 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         mTextView = findViewById(R.id.tv_prob);
+
+        mRadioGroup = findViewById(R.id.rg_model);
+        mRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup radioGroup, int i) {
+                if (i == R.id.rb_quant) {
+                    mIsFloat = false;
+                } else {
+                    mIsFloat = true;
+                }
+            }
+        });
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
             Uri uri = data.getData();
-            ContentResolver cr = this.getContentResolver();
             try {
-                Bitmap bitmap = BitmapFactory.decodeStream(cr.openInputStream(uri));
-                ImageView imageView = findViewById(R.id.mnist_img);
-                imageView.setImageBitmap(bitmap);
+                Bitmap bitmap = BitmapFactory.decodeStream(this.getContentResolver().openInputStream(uri));
 
-                BaseClassifier classifier
-                        = new FloatClassifier(ModelConfigFactory.SAVED_MODEL, this);
+                mImgView.setImageBitmap(bitmap);
 
+                String config;
+                if (mIsFloat) {
+                    config = ModelConfigFactory.FLOAT_SAVED_MODEL;
+                } else {
+                    config = ModelConfigFactory.QUANT_SAVED_MODEL;
+                }
+
+                BaseClassifier classifier = new BaseClassifier(config, this);
                 String result = classifier.doClassify(bitmap);
+
                 mTextView.setText(result);
             } catch (FileNotFoundException e) {
                 Log.e(TAG, "Not found input image: " + uri.toString());
