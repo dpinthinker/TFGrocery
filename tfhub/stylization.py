@@ -42,14 +42,18 @@ def load_image_local(image_path, image_size=(512, 512), preserve_aspect_ratio=Tr
     img = tf.image.resize(img, image_size, preserve_aspect_ratio=True)
     return img
 
-def show_image(image, title):
+def show_image(image, title, save=False):
     plt.imshow(image, aspect='equal')
     plt.axis('off')
-    plt.title(title)
-    plt.show()
+    #plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    #plt.title(title)
+    if save:
+        plt.savefig(title + '.png', bbox_inches='tight', dpi=fig.dpi,pad_inches=0.0)
+    else:
+        plt.show()
 
 content_image_path = "images/contentimg.jpeg"
-style_image_path = "images/styleimg5.jpeg"
+style_image_path = "images/styleimg.jpeg"
 
 content_image = load_image_local(content_image_path)
 style_image = load_image_local(style_image_path)
@@ -64,4 +68,6 @@ hub_module = hub.load('https://tfhub.dev/google/magenta/arbitrary-image-stylizat
 outputs = hub_module(tf.constant(content_image), tf.constant(style_image))
 stylized_image = outputs[0]
 
-show_image(stylized_image[0], "Stylized Image")
+show_image(stylized_image[0], "Stylized Image", True)
+
+#plt.imsave('image_new.jpg', stylized_image)
