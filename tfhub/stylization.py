@@ -45,8 +45,6 @@ def load_image_local(image_path, image_size=(512, 512), preserve_aspect_ratio=Tr
 def show_image(image, title, save=False):
     plt.imshow(image, aspect='equal')
     plt.axis('off')
-    #plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-    #plt.title(title)
     if save:
         plt.savefig(title + '.png', bbox_inches='tight', dpi=fig.dpi,pad_inches=0.0)
     else:
@@ -69,5 +67,3 @@ outputs = hub_module(tf.constant(content_image), tf.constant(style_image))
 stylized_image = outputs[0]
 
 show_image(stylized_image[0], "Stylized Image", True)
-
-#plt.imsave('image_new.jpg', stylized_image)
