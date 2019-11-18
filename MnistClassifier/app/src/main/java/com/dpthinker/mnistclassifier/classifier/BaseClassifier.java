@@ -9,6 +9,7 @@ import com.dpthinker.mnistclassifier.model.BaseModelConfig;
 import com.dpthinker.mnistclassifier.model.ModelConfigFactory;
 
 import org.tensorflow.lite.Interpreter;
+import org.tensorflow.lite.gpu.GpuDelegate;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -25,6 +26,7 @@ public class BaseClassifier {
     private final static String TAG = "BaseClassifier";
     protected static final int RESULTS_TO_SHOW = 3;
     protected Interpreter mTFLite;
+    protected GpuDelegate mDelegate;
 
     private String mModelPath = "";
 
@@ -60,12 +62,17 @@ public class BaseClassifier {
         this.mModelPath = config.getModelName();
     }
 
-    public BaseClassifier(String modelConfig, Activity activity) throws IOException {
+    public BaseClassifier(String modelConfig, Activity activity, boolean isGpu) throws IOException {
         // init configs for this classifier
         initConfig(ModelConfigFactory.getModelConfig(modelConfig));
 
         // init interpreter with config parameter
-        mTFLite = new Interpreter(loadModelFile(activity));
+        Interpreter.Options options = new Interpreter.Options();
+        if (isGpu) {
+            mDelegate = new GpuDelegate();
+            options.addDelegate(mDelegate);
+        }
+        mTFLite = new Interpreter(loadModelFile(activity), options);
     }
 
     /** Memory-map the model file in Assets. */
@@ -137,4 +144,11 @@ public class BaseClassifier {
         return textToShow.toString();
     }
 
+    @Override
+    public void finalize() throws Throwable {
+        super.finalize();
+        if (mDelegate != null) {
+            mDelegate.close();
+        }
+    }
 }

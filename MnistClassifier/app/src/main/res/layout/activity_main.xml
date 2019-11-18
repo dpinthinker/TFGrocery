@@ -81,6 +81,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Quantized模型" />
+
+                <RadioButton
+                    android:id="@+id/rb_gpu"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GPU代理" />
             </RadioGroup>
         </FrameLayout>
 

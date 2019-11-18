@@ -25,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView mTextView;
     private RadioGroup mRadioGroup;
     private static boolean mIsFloat = true;
+    private static boolean mIsGpu = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,8 +50,11 @@ public class MainActivity extends AppCompatActivity {
             public void onCheckedChanged(RadioGroup radioGroup, int i) {
                 if (i == R.id.rb_quant) {
                     mIsFloat = false;
-                } else {
+                } else if (i == R.id.rb_float) {
                     mIsFloat = true;
+                } else if (i == R.id.rb_gpu) {
+                    mIsFloat = true;
+                    mIsGpu = true;
                 }
             }
         });
@@ -72,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
                     config = ModelConfigFactory.QUANT_SAVED_MODEL;
                 }
 
-                BaseClassifier classifier = new BaseClassifier(config, this);
+                BaseClassifier classifier = new BaseClassifier(config, this, mIsGpu);
                 String result = classifier.doClassify(bitmap);
 
                 mTextView.setText(result);
